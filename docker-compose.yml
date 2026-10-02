@@ -1,0 +1,17 @@
+# Base de données locale pour le développement.
+# Lancer avec : docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: adai
+      POSTGRES_PASSWORD: adai
+      POSTGRES_DB: adai
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
