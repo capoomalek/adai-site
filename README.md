@@ -38,13 +38,13 @@ Next.js et Payload tournent **dans la même application** : une seule commande l
 
 ## 2. Installer les outils (une seule fois)
 
-Installe ces quatre logiciels, puis vérifie-les avec les commandes indiquées. Sous Windows, ouvre **PowerShell** ou le terminal de VS Code pour taper les commandes.
+Installe ces logiciels, puis vérifie-les avec les commandes indiquées. Sous Windows, ouvre **PowerShell** ou le terminal de VS Code pour taper les commandes.
 
 | Outil | Pourquoi | Téléchargement | Vérifier avec |
 |---|---|---|---|
 | **Git** | Récupérer et partager le code | https://git-scm.com/downloads | `git --version` |
 | **Node.js 20 ou plus** (version LTS) | Faire tourner le projet | https://nodejs.org | `node -v` |
-| **Docker Desktop** | Faire tourner la base de données sans l'installer | https://www.docker.com/products/docker-desktop | `docker --version` |
+| **Docker Desktop** *(facultatif)* | Base de données locale : seulement si tu choisis l'option B de la section 4 | https://www.docker.com/products/docker-desktop | `docker --version` |
 | **VS Code** | Éditer le code | https://code.visualstudio.com | — |
 
 Ensuite, **présente-toi à Git**. Ce nom et cet e-mail apparaîtront sur chacune de tes modifications ; utilise l'e-mail de ton compte GitHub :
@@ -71,7 +71,7 @@ cd adai-site
 code .
 ```
 
-`code .` ouvre le projet dans VS Code Sinon : *Fichier > Ouvrir le dossier…* et choisis `adai-site`.
+`code .` ouvre le projet dans VS Code. Sinon : *Fichier > Ouvrir le dossier…* et choisis `adai-site`.
 
 Au premier `git push`, Windows ouvre une fenêtre de connexion GitHub dans le navigateur : accepte-la.
 
@@ -97,13 +97,24 @@ Laisse `RESEND_API_KEY` vide : en local, les e-mails ne sont pas envoyés mais *
 
 ### Étape 2 : la base de données
 
-Lance **Docker Desktop** et attends qu'il indique « Running », puis :
+Le site a besoin d'une base PostgreSQL. **Chaque développeur a la sienne** : ne partagez jamais la même base. Quand l'un de vous ajoute un champ sur sa branche, Payload modifie automatiquement la structure de la base, ce qui casserait celle de l'autre.
+
+**Option A, la plus simple : une base gratuite en ligne sur Neon.** Rien à installer.
+
+1. Crée un compte sur https://neon.tech (offre gratuite), puis **New project**. Choisis la région la plus proche (Frankfurt, par exemple).
+2. Sur la page du projet, clique sur **Connect** et copie la *connection string*. Elle commence par `postgresql://` et finit par `?sslmode=require`.
+3. Colle-la dans `.env`, à la place de la valeur de `DATABASE_URL` :
+   ```
+   DATABASE_URL=postgresql://utilisateur:motdepasse@ep-xxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
+   ```
+
+**Option B : une base locale avec Docker.** Elle fonctionne sans internet. Lance **Docker Desktop**, attends qu'il indique « Running », puis :
 
 ```bash
 docker compose up -d
 ```
 
-Cette commande démarre une base PostgreSQL vide en arrière-plan, configurée dans `docker-compose.yml`. Tes données y restent d'une session à l'autre.
+Cette commande démarre une base PostgreSQL vide en arrière-plan, configurée dans `docker-compose.yml`. La valeur de `DATABASE_URL` déjà présente dans `.env.example` correspond à cette base : tu n'as rien à changer.
 
 ### Étape 3 : les dépendances
 
@@ -160,16 +171,11 @@ INFO: Email attempted without being configured. To: 'toi@gmail.com', Subject: '4
 ### Arrêter proprement
 
 - `Ctrl + C` dans le terminal arrête le site.
-- `docker compose stop` arrête la base. Les données sont conservées.
-- `docker compose down -v` **efface** la base pour repartir de zéro.
+- Avec Docker (option B) : `docker compose stop` arrête la base, et ses données sont conservées. `docker compose down -v` **efface** la base pour repartir de zéro.
 
 ### Les jours suivants
 
-Tout est déjà installé ; il suffit de :
-
-1. lancer Docker Desktop ;
-2. `docker compose up -d` ;
-3. `npm run dev`.
+Tout est déjà installé : lance `npm run dev`. Avec Docker (option B), lance d'abord Docker Desktop, puis `docker compose up -d`.
 
 ---
 
@@ -183,8 +189,8 @@ Tout est déjà installé ; il suffit de :
 | `npm run typecheck` | Vérifie qu'il n'y a pas d'erreur TypeScript | Avant chaque Pull Request |
 | `npm run lint` | Vérifie le style et les erreurs courantes | Avant chaque Pull Request |
 | `npm run build` | Construit la version de production | Pour vérifier que tout compile |
-| `docker compose up -d` | Démarre la base de données | Au début de chaque session |
-| `docker compose down -v` | Efface complètement la base | Pour repartir de zéro |
+| `docker compose up -d` | Démarre la base locale (option B) | Au début de chaque session |
+| `docker compose down -v` | Efface complètement la base locale (option B) | Pour repartir de zéro |
 
 ---
 
@@ -391,7 +397,14 @@ Les numéros renvoient aux sections du cahier des charges.
 
 ### 9.1 Le cycle de travail
 
-On ne modifie jamais `main` directement. Chaque tâche se fait sur une **branche**, puis on la fusionne avec une **Pull Request** (PR), ce qui permet de relire le code avant qu'il arrive dans `main`.
+La branche `main` contient la version validée du site. **Elle est protégée** : GitHub refuse tout envoi direct dessus. Chaque tâche se fait donc sur une **branche**, puis on propose de l'intégrer à `main` avec une **Pull Request** (PR). Le responsable du projet relit, approuve et fusionne. Rien n'entre dans `main` sans cette validation.
+
+```
+main ───────────────●──────────────────●────▶   (version validée)
+                     \                /
+ ta branche           ●───●───●───────▶  Pull Request → relecture → fusion
+                     tes commits
+```
 
 **① Partir de la dernière version**
 
@@ -429,11 +442,21 @@ git push -u origin annuaire-filtres
 
 **⑤ Ouvrir la Pull Request**
 
-Sur la page du dépôt, un bandeau jaune propose **Compare & pull request**. Clique dessus, décris en deux lignes ce que tu as fait et comment le tester, puis **Create pull request**. L'autre personne relit, puis clique sur **Merge pull request**.
+Sur la page du dépôt, un bandeau jaune propose **Compare & pull request**. Clique dessus, décris en deux lignes ce que tu as fait et comment le tester, puis **Create pull request**.
+
+La PR affiche alors *Review required* : c'est normal, elle attend l'approbation du responsable. Il relit les modifications (onglet *Files changed*), puis les approuve et les fusionne, ou laisse des commentaires.
 
 Pour corriger après une remarque : modifie le code sur la même branche, puis `git add .`, `git commit` et `git push`. La PR se met à jour toute seule.
 
-Une fois la PR fusionnée, reviens à l'étape ① pour la tâche suivante.
+**⑥ Après la fusion**
+
+```bash
+git checkout main
+git pull
+git branch -d annuaire-filtres
+```
+
+Ton travail est maintenant dans `main`. Reviens à l'étape ① pour la tâche suivante.
 
 ### 9.2 Récupérer le travail de l'autre pendant ta tâche
 
@@ -446,7 +469,31 @@ git merge main
 
 S'il y a un **conflit** (Git ne sait pas quelle version garder), VS Code surligne les zones concernées et propose « Accept Current », « Accept Incoming » ou « Accept Both ». Choisis, enregistre, puis `git add .` et `git commit`. En cas de doute, demande avant de trancher.
 
-### 9.3 Les règles du projet
+### 9.3 « J'ai travaillé directement sur `main` »
+
+Si tu as oublié de créer une branche, ton `git push` est refusé avec un message comme celui-ci :
+
+```
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: - Changes must be made through a pull request.
+```
+
+Pas de panique, rien n'est perdu. Déplace ton travail sur une nouvelle branche, puis remets `main` à l'état de GitHub :
+
+```bash
+git checkout -b ma-tache
+git push -u origin ma-tache
+git checkout main
+git reset --hard origin/main
+```
+
+Ouvre ensuite la Pull Request depuis `ma-tache`, comme à l'étape ⑤.
+
+### 9.4 Travailler avec une IA
+
+Le fichier [`CONTEXTE_IA.md`](CONTEXTE_IA.md) résume tout le projet pour un assistant de code (Claude, ChatGPT, Cursor…) : stack, architecture, conventions, pièges connus et fonctionnalités à venir. Il explique aussi comment démarrer une conversation. Relis toujours le code proposé et teste-le avant de le commiter : c'est toi qui le soumets dans la Pull Request.
+
+### 9.5 Les règles du projet
 
 - **Ne jamais commiter `.env`**, ni aucun mot de passe ou clé. Seul `.env.example` est partagé, sans vraies valeurs.
 - **Ne pas modifier** `src/app/(payload)/`, `src/payload-types.ts` ni `importMap.js` à la main : ils sont générés.
@@ -456,7 +503,7 @@ S'il y a un **conflit** (Git ne sait pas quelle version garder), VS Code surlign
 - **Toujours vérifier les droits côté serveur** : un bouton masqué ne protège rien. Les règles d'accès sont dans `src/access/roles.ts`.
 - Une PR = un sujet. Une petite PR est relue plus vite.
 
-### 9.4 Recette : ajouter un champ modifiable par le bureau
+### 9.6 Recette : ajouter un champ modifiable par le bureau
 
 Exemple : ajouter un sous-titre à la page « L'Association ».
 
@@ -469,7 +516,7 @@ Exemple : ajouter un sous-titre à la page « L'Association ».
 4. Redémarre `npm run dev` : Payload ajoute la colonne en base tout seul (en développement).
 5. Remplis le champ dans `/admin` et vérifie le résultat sur le site.
 
-### 9.5 Les commandes Git essentielles
+### 9.7 Les commandes Git essentielles
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -487,7 +534,7 @@ Exemple : ajouter un sous-titre à la page « L'Association ».
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
-| `cannot connect to Postgres` / `ECONNREFUSED 127.0.0.1:5432` | La base ne tourne pas | Lancer Docker Desktop, puis `docker compose up -d` |
+| `cannot connect to Postgres` / `ECONNREFUSED` | La base est injoignable | Option A : vérifier `DATABASE_URL` dans `.env` et la connexion internet. Option B : lancer Docker Desktop, puis `docker compose up -d` |
 | `port 3000 already in use` | Un ancien serveur tourne encore | Fermer les autres terminaux, ou utiliser le port indiqué (souvent 3001) |
 | « Non autorisé » sur `/admin` | Tu es connecté avec un compte **membre** | Cliquer sur « Se déconnecter », puis se connecter avec le compte admin |
 | Pas de code de vérification reçu | En local, les e-mails ne partent pas | Le chercher dans le terminal de `npm run dev` (ligne `Subject:`) |
