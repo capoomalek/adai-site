@@ -71,7 +71,7 @@ cd adai-site
 code .
 ```
 
-`code .` ouvre le projet dans VS Code. Sinon : *Fichier > Ouvrir le dossier…* et choisis `adai-site`.
+`code .` ouvre le projet dans VS Code Sinon : *Fichier > Ouvrir le dossier…* et choisis `adai-site`.
 
 Au premier `git push`, Windows ouvre une fenêtre de connexion GitHub dans le navigateur : accepte-la.
 
