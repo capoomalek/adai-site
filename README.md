@@ -140,7 +140,7 @@ npm run dev
 
 Attends le message `Ready`, puis ouvre :
 
-- le site : **http://localhost:3000**
+- le  site : **http://localhost:3000**
 - le back-office : **http://localhost:3000/admin**
 
 Le  premier affichage de chaque page prend quelques secondes, le temps que Next.js la compile.
